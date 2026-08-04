@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Skin of Sin — Nightmare Mirror by @ANancysilver. Body-horror kaleidoscope with spiders, blood, ritual glyphs, and story beats." />
+  <meta name="theme-color" content="#050203" />
+  <title>Skin of Sin — Nightmare Mirror</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050203; --fg: #e8d6ce; --muted: #8a6e66; --subtle: #5a403c;
+      --border: #3a2226; --flesh: #b85a4e; --raw: #d47868; --blood: #6e1018; --bone: #d8c8b8;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+      font-family: "IBM Plex Sans", system-ui, sans-serif; overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    main { position: relative; width: 100%; height: 100dvh; background: #030102; overflow: hidden; }
+    #stage {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      transform-origin: center center; will-change: transform;
+    }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+    .chip, .panel {
+      background: linear-gradient(165deg, #1c1012 0%, #120a0c 50%, #0a0406 100%);
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 40px rgba(0,0,0,.65), 0 0 0 1px rgba(110,16,24,.2);
+      position: relative; overflow: hidden;
+    }
+    .chip::before, .panel::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .08;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+    .chip {
+      position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; z-index: 20;
+      border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px;
+      max-width: calc(100vw - 72px);
+    }
+    .chip .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #8b1520;
+      box-shadow: 0 0 10px rgba(140,20,30,.7); animation: pulse 2.4s ease-in-out infinite; flex-shrink: 0;
+    }
+    .chip .dot.held { background: #5a403c; box-shadow: none; animation: none; }
+    .chip span {
+      font-family: "Cormorant Garamond", serif; font-size: 14px; letter-spacing: .04em;
+      color: var(--bone); position: relative; z-index: 1; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .mute-fab {
+      position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 20;
+      min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--border);
+      background: linear-gradient(165deg, #1c1012, #0a0406); color: var(--fg);
+      cursor: pointer; font-size: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    }
+    .mute-fab.on { color: var(--raw); border-color: #5a3034; }
+    .story-banner {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 15; pointer-events: none; text-align: center; opacity: 0;
+      transition: opacity .6s ease; max-width: 90vw;
+    }
+    .story-banner.show { opacity: 1; }
+    .story-banner p {
+      font-family: "Cormorant Garamond", serif; font-size: clamp(18px, 5vw, 28px);
+      color: var(--bone); letter-spacing: .08em; text-shadow: 0 0 24px rgba(110,16,24,.8), 0 2px 8px #000;
+      margin: 0; font-weight: 600;
+    }
+    .panel-wrap {
+      position: absolute; inset-inline: 0; bottom: 0; z-index: 20;
+      display: flex; justify-content: center; padding: 10px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom)); pointer-events: none;
+    }
+    .panel {
+      width: 100%; max-width: 460px; border-radius: 14px; padding: 12px;
+      pointer-events: auto; max-height: min(72dvh, 620px); overflow: auto;
+    }
+    .panel > * { position: relative; z-index: 1; }
+    .title-row { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+    .eyebrow {
+      font-family: "Cormorant Garamond", serif; font-size: 11px; letter-spacing: .22em;
+      text-transform: uppercase; color: var(--subtle); margin: 0 0 2px;
+    }
+    h1 {
+      font-family: "Cormorant Garamond", serif; font-size: 20px; font-weight: 600;
+      margin: 0; color: var(--bone); line-height: 1.15;
+    }
+    .sub { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+    .toggle {
+      min-width: 40px; min-height: 40px; border-radius: 10px; border: 1px solid var(--border);
+      background: #1a1012; color: var(--fg); cursor: pointer; flex-shrink: 0;
+    }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (min-width: 480px) {
+      .actions { grid-template-columns: repeat(3, 1fr); }
+      h1 { font-size: 22px; }
+    }
+    button.btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      min-height: 42px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border);
+      background: linear-gradient(180deg, #1c1214, #120a0c); color: var(--fg);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+    }
+    button.btn:active { transform: scale(.98); }
+    button.btn.primary {
+      background: linear-gradient(180deg, #a05048, #6e1018); border-color: #8a3830;
+      color: #140808; font-weight: 600; box-shadow: 0 0 18px rgba(110,16,24,.4);
+    }
+    button.btn.active { border-color: var(--flesh); color: var(--raw); background: #1a080c; }
+    button.btn.rec { border-color: #a03030; color: #e08080; }
+    button.btn.rec.live { background: #4a1014; animation: pulse 1.2s ease-in-out infinite; }
+    .details { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: none; }
+    .details.open { display: block; }
+    label.block { display: block; margin-bottom: 12px; }
+    label.block .row {
+      display: flex; justify-content: space-between; margin-bottom: 6px;
+      font-size: 12px; color: var(--muted);
+    }
+    label.block .row strong {
+      font-family: "Cormorant Garamond", serif; color: var(--raw); font-weight: 600;
+    }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+      border-radius: 999px; background: linear-gradient(90deg, #2a060a, #6e1018, #a05048, #d8c8b8); outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #d47868, #6e1018);
+      border: 1px solid rgba(216,200,184,.35); box-shadow: 0 0 10px rgba(110,16,24,.55); cursor: pointer;
+    }
+    select {
+      width: 100%; min-height: 42px; padding: 8px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: #080305; color: var(--fg); font-size: 13px; outline: none;
+    }
+    select:focus { border-color: var(--flesh); box-shadow: 0 0 0 2px rgba(110,16,24,.35); }
+    .hint { margin: 6px 0 0; font-size: 11px; color: var(--subtle); line-height: 1.35; }
+    .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+    .check {
+      display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); cursor: pointer;
+    }
+    .check input { accent-color: #6e1018; width: 15px; height: 15px; flex-shrink: 0; }
+    .credit {
+      margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--subtle); line-height: 1.4;
+    }
+    .credit strong { color: var(--muted); font-weight: 500; }
+    @keyframes pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .chip .dot, button.btn.rec.live { animation: none; }
+      #stage { transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="chip">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Something watches</span>
+    </div>
+    <button class="mute-fab" id="muteBtn" type="button" aria-label="Toggle sound" title="Sound">🔇</button>
+    <div class="story-banner" id="storyBanner"><p id="storyText"></p></div>
+    <div id="stage">
+      <canvas id="c" aria-label="Nightmare Mirror — drag to paint; creatures crawl from the wound"></canvas>
+    </div>
+    <div class="panel-wrap">
+      <div class="panel">
+        <div class="title-row">
+          <div>
+            <p class="eyebrow">Skin of Sin</p>
+            <h1>Nightmare Mirror</h1>
+            <p class="sub">Paint. Something crawls out.</p>
+          </div>
+          <button class="toggle" id="foldBtn" aria-label="Toggle controls" type="button">▾</button>
+        </div>
+        <div class="actions">
+          <button class="btn" id="freezeBtn" type="button">Freeze</button>
+          <button class="btn" id="randBtn" type="button">Randomize</button>
+          <button class="btn" id="burstBtn" type="button">Pupil burst</button>
+          <button class="btn" id="clearBtn" type="button">Clear</button>
+          <button class="btn primary" id="exportBtn" type="button">Export still</button>
+          <button class="btn rec" id="recBtn" type="button">Record clip</button>
+        </div>
+        <div class="details open" id="details">
+          <label class="block">
+            <div class="row"><span>Segments</span><strong id="segVal">10</strong></div>
+            <input type="range" id="seg" min="3" max="20" value="10" />
+          </label>
+          <label class="block">
+            <div class="row"><span>Horror palette</span></div>
+            <select id="mode">
+              <option value="nightmare">Blood Rite</option>
+              <option value="wound">Arterial Spray</option>
+              <option value="bruise">Purple Bruise</option>
+              <option value="ichor">Black Ichor</option>
+              <option value="fever">Fever Dream</option>
+              <option value="bone">Bone Chapel</option>
+              <option value="void">Void Prism</option>
+            </select>
+            <p class="hint" id="modeHint">Wet blood on black tissue</p>
+          </label>
+          <label class="block">
+            <div class="row"><span>Creature mode</span></div>
+            <select id="creature">
+              <option value="spiders">Spiders</option>
+              <option value="leeches">Leeches</option>
+              <option value="teeth">Teeth</option>
+              <option value="eyes">Eyes</option>
+              <option value="bayou">Bayou bugs</option>
+              <option value="none">None</option>
+            </select>
+            <p class="hint">What crawls from strokes and the pupil</p>
+          </label>
+          <label class="block">
+            <div class="row"><span>Ritual overlay</span></div>
+            <select id="ritual">
+              <option value="none">None</option>
+              <option value="glyphs">Grimoire glyphs</option>
+              <option value="candles">Candles</option>
+              <option value="ash">Ash fall</option>
+            </select>
+            <p class="hint">Mirrored ritual marks over the field</p>
+          </label>
+          <label class="block">
+            <div class="row"><span>Wound size</span><strong id="brushVal">16</strong></div>
+            <input type="range" id="brush" min="6" max="40" value="16" />
+          </label>
+          <label class="block">
+            <div class="row"><span>Memory</span><strong id="trailVal">12</strong></div>
+            <input type="range" id="trail" min="1" max="20" value="12" />
+          </label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" id="flip" checked /> Mirror flip</label>
+            <label class="check"><input type="checkbox" id="splatter" checked /> Blood splatter</label>
+            <label class="check"><input type="checkbox" id="infection" checked /> Infection</label>
+            <label class="check"><input type="checkbox" id="webs" checked /> Silk webs</label>
+            <label class="check"><input type="checkbox" id="eye" checked /> Watching eye</label>
+            <label class="check"><input type="checkbox" id="heartbeat" checked /> Heartbeat</label>
+            <label class="check"><input type="checkbox" id="story" checked /> Story beats</label>
+            <label class="check"><input type="checkbox" id="silk" checked /> Silk trails</label>
+          </div>
+          <p class="credit">
+            <strong>Skin of Sin — Nightmare Mirror</strong><br />
+            Collection piece by @ANancysilver · export stills · record clips for X / Substack
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+(() => {
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const buffer = document.createElement("canvas");
+  const bctx = buffer.getContext("2d", { alpha: false });
+  const stage = document.getElementById("stage");
+
+  const modes = {
+    nightmare: { hint: "Wet blood on black tissue", hues: [0, 2, 355, 348, 8, 15], s: [0.72, 0.98], l: [0.12, 0.38] },
+    wound: { hint: "Fresh arterial spray", hues: [0, 358, 4, 10, 352], s: [0.85, 1.0], l: [0.18, 0.48] },
+    bruise: { hint: "Deep purple contusion", hues: [275, 285, 295, 265, 310, 50], s: [0.45, 0.85], l: [0.14, 0.42] },
+    ichor: { hint: "Sick green-black, bile gold", hues: [90, 110, 70, 40, 130], s: [0.4, 0.8], l: [0.12, 0.36] },
+    fever: { hint: "Heat flush, inflammation", hues: [12, 28, 40, 5, 50], s: [0.6, 0.95], l: [0.22, 0.5] },
+    bone: { hint: "Pale ivory, ash, rust", hues: [30, 20, 0, 210], s: [0.05, 0.28], l: [0.35, 0.75] },
+    void: { hint: "Spectrum through membrane", hues: [0, 40, 90, 160, 220, 280, 320], s: [0.55, 0.95], l: [0.18, 0.45] },
+  };
+
+  const STORY_LINES = [
+    "Something wakes.",
+    "It remembers your hand.",
+    "The pupil dilates.",
+    "Silk between the teeth.",
+    "Bayou under the skin.",
+    "Do not look away.",
+    "The mirror is hungry.",
+    "A leg finds purchase.",
+  ];
+
+  const state = {
+    segments: 10,
+    mode: "nightmare",
+    creature: "spiders",
+    ritual: "none",
+    brush: 16,
+    trail: 12,
+    flip: true,
+    splatter: true,
+    infection: true,
+    webs: true,
+    eye: true,
+    heartbeat: true,
+    story: true,
+    silk: true,
+    frozen: false,
+    muted: true,
+    audioReady: false,
+    recording: false,
+    hueT: Math.random() * 20,
+    dpr: 1, w: 0, h: 0,
+    ptr: { active: false, target: { x: 0, y: 0 }, smooth: { x: 0, y: 0 }, last: null, downAt: 0, downPos: null },
+    auto: { angle: Math.random() * Math.PI * 2, radius: 0.3, radiusTarget: 0.4, speed: 1, lastInput: 0 },
+    pulse: 0, beatPhase: 0, breathPhase: 0,
+    entities: [], // creatures
+    spatters: [],
+    infectionPts: [],
+    websList: [],
+    ash: [],
+    candles: [],
+    glyphs: [],
+    burstUntil: 0,
+    eyeOpen: 0.35,
+    storyUntil: 0,
+    lastStoryAt: 0,
+    reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+  };
+
+  // ——— Audio ———
+  let audioCtx = null, masterGain = null, thrumOsc = null, thrumGain = null, lastDragSound = 0;
+
+  function ensureAudio() {
+    if (state.audioReady) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = state.muted ? 0 : 0.35;
+      masterGain.connect(audioCtx.destination);
+      thrumOsc = audioCtx.createOscillator();
+      thrumOsc.type = "sine";
+      thrumOsc.frequency.value = 42;
+      thrumGain = audioCtx.createGain();
+      thrumGain.gain.value = 0.012;
+      thrumOsc.connect(thrumGain);
+      thrumGain.connect(masterGain);
+      thrumOsc.start();
+      state.audioReady = true;
+    } catch (_) { state.audioReady = false; }
+  }
+
+  function setMuted(m) {
+    state.muted = m;
+    if (masterGain) {
+      const t = audioCtx.currentTime;
+      masterGain.gain.cancelScheduledValues(t);
+      masterGain.gain.linearRampToValueAtTime(m ? 0 : 0.35, t + 0.08);
+    }
+    $("muteBtn").textContent = m ? "🔇" : "🔊";
+    $("muteBtn").classList.toggle("on", !m);
+  }
+
+  function beatThump() {
+    if (!state.audioReady || state.muted || !state.heartbeat) return;
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(58, t);
+    o.frequency.exponentialRampToValueAtTime(28, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t + 0.2);
+  }
+
+  function fleshTap() {
+    if (!state.audioReady || state.muted) return;
+    const t = audioCtx.currentTime;
+    const noise = audioCtx.createBuffer(1, 2048, audioCtx.sampleRate);
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < 2048; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / 400);
+    const src = audioCtx.createBufferSource();
+    src.buffer = noise;
+    const f = audioCtx.createBiquadFilter();
+    f.type = "lowpass"; f.frequency.value = 600;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.22, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    src.connect(f); f.connect(g); g.connect(masterGain);
+    src.start(t); src.stop(t + 0.15);
+  }
+
+  function skitter() {
+    if (!state.audioReady || state.muted) return;
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(180 + Math.random() * 220, t);
+    o.frequency.exponentialRampToValueAtTime(80, t + 0.06);
+    g.gain.setValueAtTime(0.04, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t + 0.08);
+  }
+
+  function wetDrag(intensity) {
+    if (!state.audioReady || state.muted) return;
+    const now = performance.now();
+    if (now - lastDragSound < 55) return;
+    lastDragSound = now;
+    const t = audioCtx.currentTime;
+    const n = audioCtx.createBuffer(1, 1024, audioCtx.sampleRate);
+    const d = n.getChannelData(0);
+    for (let i = 0; i < 1024; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / 180);
+    const src = audioCtx.createBufferSource();
+    src.buffer = n;
+    const f = audioCtx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = 180 + intensity * 220;
+    f.Q.value = 0.7;
+    const g = audioCtx.createGain();
+    g.gain.value = 0.03 + intensity * 0.05;
+    src.connect(f); f.connect(g); g.connect(masterGain);
+    src.start(t); src.stop(t + 0.05);
+  }
+
+  // ——— Math ———
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function rot(x, y, a) {
+    const c = Math.cos(a), s = Math.sin(a);
+    return { x: x * c - y * s, y: x * s + y * c };
+  }
+  function sampleColor(t, variance = 0) {
+    const m = modes[state.mode];
+    const hues = m.hues;
+    const idx = Math.floor(Math.abs(t) * hues.length) % hues.length;
+    const h = (hues[idx] + variance * 20 + Math.sin(t * 11) * 10 + 360) % 360;
+    const s = m.s[0] + (m.s[1] - m.s[0]) * (0.5 + 0.5 * Math.sin(t * 7 + variance));
+    const l = m.l[0] + (m.l[1] - m.l[0]) * (0.5 + 0.5 * Math.cos(t * 5 + variance * 2));
+    return { h, s: Math.min(1, s + 0.06), l: Math.min(0.55, l) };
+  }
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.floor(window.innerWidth * dpr));
+    const h = Math.max(1, Math.floor(window.innerHeight * dpr));
+    if (canvas.width === w && canvas.height === h) return;
+    const prev = document.createElement("canvas");
+    prev.width = buffer.width; prev.height = buffer.height;
+    const pctx = prev.getContext("2d");
+    if (pctx && buffer.width) pctx.drawImage(buffer, 0, 0);
+    canvas.width = w; canvas.height = h;
+    buffer.width = w; buffer.height = h;
+    bctx.fillStyle = "#050203";
+    bctx.fillRect(0, 0, w, h);
+    if (prev.width) bctx.drawImage(prev, 0, 0, w, h);
+    state.w = w; state.h = h; state.dpr = dpr;
+  }
+
+  // ——— Drawing primitives ———
+  function stampBlob(x, y, r, col) {
+    const core = `hsla(${col.h|0} ${(col.s*100)|0}% ${((col.l+0.08)*100)|0}% / 0.8)`;
+    const glow = `hsla(${col.h|0} ${(col.s*100)|0}% ${(col.l*100)|0}% / 0.18)`;
+    const dark = `hsla(${((col.h+15)%360)|0} 45% 8% / 0.35)`;
+    bctx.globalCompositeOperation = "source-over";
+    bctx.fillStyle = dark;
+    bctx.beginPath(); bctx.arc(x, y, r * 1.3, 0, Math.PI * 2); bctx.fill();
+    bctx.globalCompositeOperation = "lighter";
+    bctx.fillStyle = glow;
+    bctx.beginPath(); bctx.arc(x, y, r * 1.9, 0, Math.PI * 2); bctx.fill();
+    bctx.globalCompositeOperation = "source-over";
+    bctx.fillStyle = core;
+    bctx.beginPath(); bctx.arc(x, y, r * 0.5, 0, Math.PI * 2); bctx.fill();
+  }
+
+  function paintMirroredPoint(rx, ry, draw) {
+    const { w, h } = state;
+    const cx = w / 2, cy = h / 2;
+    const segments = state.segments;
+    const wedge = (Math.PI * 2) / segments;
+    for (let i = 0; i < segments; i++) {
+      let lx = rx, ly = ry;
+      if (i % 2 === 1) {
+        if (state.flip) ly = -ry; else lx = -rx;
+      }
+      const p = rot(lx, ly, i * wedge);
+      draw(cx + p.x, cy + p.y, i);
+    }
+  }
+
+  // ——— Blood splatter ———
+  function spawnSplatter(x, y, force = 1) {
+    if (!state.splatter) return;
+    const { dpr } = state;
+    const n = Math.min(28, Math.floor(8 + force * 14));
+    const col = sampleColor(state.hueT);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const spd = (1.5 + Math.random() * 6) * force * dpr;
+      state.spatters.push({
+        x, y,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd - Math.random() * 1.5 * dpr,
+        life: 1,
+        r: (1 + Math.random() * 2.8) * dpr * force,
+        elong: 1.5 + Math.random() * 2.5,
+        col,
+        stain: Math.random() > 0.45,
+      });
+    }
+    if (state.spatters.length > 120) state.spatters.splice(0, state.spatters.length - 120);
+  }
+
+  function updateSpatters(dt) {
+    const scale = dt / 16;
+    for (let i = state.spatters.length - 1; i >= 0; i--) {
+      const s = state.spatters[i];
+      s.vy += 0.06 * state.dpr * scale;
+      s.x += s.vx * scale;
+      s.y += s.vy * scale;
+      s.vx *= 0.98;
+      s.life -= 0.012 * scale;
+      if (s.life <= 0) {
+        if (s.stain) {
+          // residual stain on buffer
+          bctx.globalCompositeOperation = "source-over";
+          bctx.fillStyle = `hsla(${s.col.h|0} ${(s.col.s*100)|0}% ${((s.col.l)*100)|0}% / 0.35)`;
+          bctx.beginPath();
+          bctx.ellipse(s.x, s.y, s.r * 1.2, s.r * 0.7, Math.atan2(s.vy, s.vx), 0, Math.PI * 2);
+          bctx.fill();
+        }
+        state.spatters.splice(i, 1);
+      }
+    }
+  }
+
+  function drawSpatters(targetCtx) {
+    for (const s of state.spatters) {
+      const ang = Math.atan2(s.vy, s.vx);
+      targetCtx.fillStyle = `hsla(${s.col.h|0} ${(s.col.s*100)|0}% ${((s.col.l+0.05)*100)|0}% / ${0.7 * s.life})`;
+      targetCtx.beginPath();
+      targetCtx.ellipse(s.x, s.y, s.r * s.elong, s.r * 0.55, ang, 0, Math.PI * 2);
+      targetCtx.fill();
+    }
+  }
+
+  // ——— Creatures ———
+  function spawnCreature(x, y, opts = {}) {
+    if (state.creature === "none") return;
+    if (state.entities.length > 36) state.entities.shift();
+    const { w, h, dpr } = state;
+    const cx = w / 2, cy = h / 2;
+    const dx = x - cx, dy = y - cy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const outAngle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.8;
+    const type = opts.type || state.creature;
+    state.entities.push({
+      type,
+      x, y,
+      angle: outAngle,
+      speed: (0.4 + Math.random() * 1.1) * dpr * (opts.burst ? 1.8 : 1),
+      life: 1,
+      legPhase: Math.random() * Math.PI * 2,
+      size: (opts.size || 1) * (0.7 + Math.random() * 0.6) * dpr,
+      silk: state.silk && type === "spiders",
+      silkPts: [],
+      mirrored: opts.mirrored !== false,
+    });
+    if (Math.random() < 0.3) skitter();
+  }
+
+  function spawnMirroredCreatures(x, y, opts = {}) {
+    const { w, h } = state;
+    const cx = w / 2, cy = h / 2;
+    const rx = x - cx, ry = y - cy;
+    paintMirroredPoint(rx, ry, (mx, my) => {
+      spawnCreature(mx, my, { ...opts, mirrored: false });
+    });
+  }
+
+  function updateCreatures(dt) {
+    const scale = dt / 16;
+    const { w, h } = state;
+    for (let i = state.entities.length - 1; i >= 0; i--) {
+      const e = state.entities[i];
+      e.angle += (Math.random() - 0.5) * 0.08;
+      e.x += Math.cos(e.angle) * e.speed * scale;
+      e.y += Math.sin(e.angle) * e.speed * scale;
+      e.legPhase += 0.25 * scale;
+      e.life -= 0.0018 * scale;
+      if (e.silk && Math.random() < 0.4) {
+        e.silkPts.push({ x: e.x, y: e.y });
+        if (e.silkPts.length > 12) e.silkPts.shift();
+      }
+      if (e.life <= 0 || e.x < -40 || e.y < -40 || e.x > w + 40 || e.y > h + 40) {
+        state.entities.splice(i, 1);
+      }
+    }
+  }
+
+  function drawSpider(ctx2, e) {
+    const s = e.size * 4;
+    ctx2.save();
+    ctx2.translate(e.x, e.y);
+    ctx2.rotate(e.angle);
+    // silk trail
+    if (e.silkPts.length > 1) {
+      ctx2.strokeStyle = `rgba(200, 180, 160, ${0.25 * e.life})`;
+      ctx2.lineWidth = 0.6 * state.dpr;
+      ctx2.beginPath();
+      // trails in world space — draw separately
+    }
+    ctx2.fillStyle = `rgba(20, 8, 10, ${0.85 * e.life})`;
+    ctx2.beginPath();
+    ctx2.ellipse(0, 0, s * 0.55, s * 0.4, 0, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.beginPath();
+    ctx2.ellipse(-s * 0.55, 0, s * 0.35, s * 0.3, 0, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.strokeStyle = `rgba(40, 12, 14, ${0.9 * e.life})`;
+    ctx2.lineWidth = Math.max(0.8, 0.9 * state.dpr);
+    for (let leg = 0; leg < 8; leg++) {
+      const side = leg < 4 ? 1 : -1;
+      const idx = leg % 4;
+      const baseA = side * (0.4 + idx * 0.35);
+      const wave = Math.sin(e.legPhase + idx * 0.9) * 0.25;
+      const len = s * (1.1 + idx * 0.15);
+      ctx2.beginPath();
+      ctx2.moveTo(0, 0);
+      const mx = Math.cos(baseA + wave) * len * 0.5;
+      const my = Math.sin(baseA + wave) * len * 0.55 * side;
+      ctx2.quadraticCurveTo(mx, my, Math.cos(baseA) * len, Math.sin(baseA) * len * side);
+      ctx2.stroke();
+    }
+    // eyes
+    ctx2.fillStyle = `rgba(180, 30, 40, ${0.9 * e.life})`;
+    ctx2.beginPath(); ctx2.arc(-s * 0.7, -s * 0.12, s * 0.08, 0, Math.PI * 2); ctx2.fill();
+    ctx2.beginPath(); ctx2.arc(-s * 0.7, s * 0.12, s * 0.08, 0, Math.PI * 2); ctx2.fill();
+    ctx2.restore();
+    // silk in world space
+    if (e.silkPts.length > 1) {
+      ctx2.strokeStyle = `rgba(200, 180, 160, ${0.2 * e.life})`;
+      ctx2.lineWidth = 0.5 * state.dpr;
+      ctx2.beginPath();
+      ctx2.moveTo(e.silkPts[0].x, e.silkPts[0].y);
+      for (let i = 1; i < e.silkPts.length; i++) ctx2.lineTo(e.silkPts[i].x, e.silkPts[i].y);
+      ctx2.stroke();
+    }
+  }
+
+  function drawLeech(ctx2, e) {
+    const s = e.size * 5;
+    ctx2.save();
+    ctx2.translate(e.x, e.y);
+    ctx2.rotate(e.angle);
+    const wob = Math.sin(e.legPhase) * 0.15;
+    ctx2.fillStyle = `rgba(60, 20, 40, ${0.85 * e.life})`;
+    ctx2.beginPath();
+    ctx2.ellipse(0, 0, s, s * (0.28 + wob * 0.1), 0, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.fillStyle = `rgba(120, 30, 40, ${0.5 * e.life})`;
+    ctx2.beginPath();
+    ctx2.arc(-s * 0.7, 0, s * 0.2, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.restore();
+  }
+
+  function drawTooth(ctx2, e) {
+    const s = e.size * 5;
+    ctx2.save();
+    ctx2.translate(e.x, e.y);
+    ctx2.rotate(e.angle + Math.PI / 2);
+    ctx2.fillStyle = `rgba(220, 210, 195, ${0.9 * e.life})`;
+    ctx2.beginPath();
+    ctx2.moveTo(0, -s);
+    ctx2.lineTo(s * 0.35, s * 0.5);
+    ctx2.lineTo(-s * 0.35, s * 0.5);
+    ctx2.closePath();
+    ctx2.fill();
+    ctx2.fillStyle = `rgba(140, 40, 50, ${0.35 * e.life})`;
+    ctx2.beginPath();
+    ctx2.moveTo(0, -s * 0.3);
+    ctx2.lineTo(s * 0.12, s * 0.2);
+    ctx2.lineTo(-s * 0.12, s * 0.2);
+    ctx2.closePath();
+    ctx2.fill();
+    ctx2.restore();
+  }
+
+  function drawEyeCreature(ctx2, e) {
+    const s = e.size * 5;
+    ctx2.save();
+    ctx2.translate(e.x, e.y);
+    ctx2.fillStyle = `rgba(200, 180, 170, ${0.85 * e.life})`;
+    ctx2.beginPath();
+    ctx2.ellipse(0, 0, s * 0.9, s * 0.55, 0, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.fillStyle = `rgba(100, 30, 40, ${0.9 * e.life})`;
+    ctx2.beginPath();
+    ctx2.arc(Math.cos(e.angle) * s * 0.15, Math.sin(e.angle) * s * 0.1, s * 0.28, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.fillStyle = `rgba(10, 2, 4, ${0.95 * e.life})`;
+    ctx2.beginPath();
+    ctx2.arc(Math.cos(e.angle) * s * 0.15, Math.sin(e.angle) * s * 0.1, s * 0.12, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.restore();
+  }
+
+  function drawBayouBug(ctx2, e) {
+    const s = e.size * 4;
+    ctx2.save();
+    ctx2.translate(e.x, e.y);
+    ctx2.rotate(e.angle);
+    ctx2.fillStyle = `rgba(40, 70, 30, ${0.85 * e.life})`;
+    ctx2.beginPath();
+    ctx2.ellipse(0, 0, s * 0.7, s * 0.35, 0, 0, Math.PI * 2);
+    ctx2.fill();
+    // wings
+    ctx2.fillStyle = `rgba(120, 160, 80, ${0.25 * e.life})`;
+    const flap = Math.sin(e.legPhase * 2) * 0.3;
+    ctx2.beginPath();
+    ctx2.ellipse(-s * 0.1, -s * 0.4, s * 0.5, s * (0.2 + flap), -0.4, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.beginPath();
+    ctx2.ellipse(-s * 0.1, s * 0.4, s * 0.5, s * (0.2 + flap), 0.4, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.fillStyle = `rgba(200, 180, 40, ${0.7 * e.life})`;
+    ctx2.beginPath();
+    ctx2.arc(-s * 0.55, 0, s * 0.12, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.restore();
+  }
+
+  function drawCreatures(ctx2) {
+    for (const e of state.entities) {
+      if (e.type === "spiders") drawSpider(ctx2, e);
+      else if (e.type === "leeches") drawLeech(ctx2, e);
+      else if (e.type === "teeth") drawTooth(ctx2, e);
+      else if (e.type === "eyes") drawEyeCreature(ctx2, e);
+      else if (e.type === "bayou") drawBayouBug(ctx2, e);
+    }
+  }
+
+  // ——— Infection ———
+  function infectionStep() {
+    if (!state.infection || state.frozen) return;
+    const { w, h, dpr } = state;
+    // seed near existing content occasionally from pointer
+    if (state.ptr.active && Math.random() < 0.15) {
+      const p = state.ptr.smooth;
+      state.infectionPts.push({
+        x: p.x + (Math.random() - 0.5) * 40 * dpr,
+        y: p.y + (Math.random() - 0.5) * 40 * dpr,
+        r: (3 + Math.random() * 8) * dpr,
+        life: 1,
+        growth: 0.02 + Math.random() * 0.04,
+      });
+    }
+    // grow existing
+    for (let i = state.infectionPts.length - 1; i >= 0; i--) {
+      const p = state.infectionPts[i];
+      p.r += p.growth * dpr;
+      p.life -= 0.002;
+      if (Math.random() < 0.02 && state.infectionPts.length < 50) {
+        state.infectionPts.push({
+          x: p.x + (Math.random() - 0.5) * p.r * 2,
+          y: p.y + (Math.random() - 0.5) * p.r * 2,
+          r: p.r * 0.4,
+          life: p.life * 0.8,
+          growth: p.growth * 0.9,
+        });
+      }
+      if (p.life <= 0) state.infectionPts.splice(i, 1);
+    }
+    // stamp onto buffer slowly
+    for (const p of state.infectionPts) {
+      if (Math.random() > 0.3) continue;
+      const col = sampleColor(state.hueT + p.x * 0.01);
+      bctx.globalCompositeOperation = "source-over";
+      bctx.fillStyle = `hsla(${col.h|0} ${(col.s*40)|0}% ${((col.l*0.5)*100)|0}% / 0.06)`;
+      bctx.beginPath();
+      bctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      bctx.fill();
+    }
+  }
+
+  // ——— Webs ———
+  function maybeAddWeb() {
+    if (!state.webs || Math.random() > 0.008) return;
+    const { w, h, dpr } = state;
+    const cx = w / 2, cy = h / 2;
+    const a1 = Math.random() * Math.PI * 2;
+    const a2 = a1 + (0.4 + Math.random() * 1.2) * (Math.random() < 0.5 ? 1 : -1);
+    const r1 = Math.min(w, h) * (0.15 + Math.random() * 0.35);
+    const r2 = Math.min(w, h) * (0.15 + Math.random() * 0.35);
+    state.websList.push({
+      x1: cx + Math.cos(a1) * r1,
+      y1: cy + Math.sin(a1) * r1,
+      x2: cx + Math.cos(a2) * r2,
+      y2: cy + Math.sin(a2) * r2,
+      life: 1,
+      width: (0.5 + Math.random()) * dpr,
+    });
+    if (state.websList.length > 24) state.websList.shift();
+  }
+
+  function drawWebs(ctx2) {
+    for (let i = state.websList.length - 1; i >= 0; i--) {
+      const w = state.websList[i];
+      w.life -= 0.0015;
+      if (w.life <= 0) { state.websList.splice(i, 1); continue; }
+      ctx2.strokeStyle = `rgba(200, 185, 170, ${0.22 * w.life})`;
+      ctx2.lineWidth = w.width;
+      ctx2.beginPath();
+      ctx2.moveTo(w.x1, w.y1);
+      const mx = (w.x1 + w.x2) / 2 + Math.sin(w.life * 3) * 8;
+      const my = (w.y1 + w.y2) / 2 + Math.cos(w.life * 2) * 8;
+      ctx2.quadraticCurveTo(mx, my, w.x2, w.y2);
+      ctx2.stroke();
+    }
+  }
+
+  // ——— Ritual overlays ———
+  function updateRitual(dt) {
+    const { w, h, dpr } = state;
+    const cx = w / 2, cy = h / 2;
+    if (state.ritual === "ash") {
+      if (Math.random() < 0.4) {
+        state.ash.push({
+          x: Math.random() * w,
+          y: -5 * dpr,
+          vy: (0.3 + Math.random() * 1.2) * dpr,
+          vx: (Math.random() - 0.5) * 0.4 * dpr,
+          r: (0.6 + Math.random() * 1.8) * dpr,
+          life: 1,
+        });
+      }
+      for (let i = state.ash.length - 1; i >= 0; i--) {
+        const a = state.ash[i];
+        a.y += a.vy * (dt / 16);
+        a.x += a.vx * (dt / 16);
+        a.life -= 0.004;
+        if (a.life <= 0 || a.y > h) state.ash.splice(i, 1);
+      }
+      if (state.ash.length > 80) state.ash.splice(0, state.ash.length - 80);
+    }
+    if (state.ritual === "candles" && state.candles.length === 0) {
+      for (let i = 0; i < state.segments; i++) {
+        const a = (i / state.segments) * Math.PI * 2;
+        const r = Math.min(w, h) * 0.32;
+        state.candles.push({ angle: a, r, flicker: Math.random() * Math.PI * 2 });
+      }
+    }
+    if (state.ritual !== "candles") state.candles = [];
+    if (state.ritual === "glyphs" && state.glyphs.length === 0) {
+      const symbols = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "⊕", "⊛", "⚔", "☽"];
+      for (let i = 0; i < state.segments; i++) {
+        const a = (i / state.segments) * Math.PI * 2 + 0.2;
+        state.glyphs.push({
+          angle: a,
+          r: Math.min(w, h) * 0.28,
+          ch: symbols[i % symbols.length],
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+    if (state.ritual !== "glyphs") state.glyphs = [];
+    for (const c of state.candles) c.flicker += dt * 0.01;
+    for (const g of state.glyphs) g.phase += dt * 0.003;
+  }
+
+  function drawRitual(ctx2) {
+    const { w, h, dpr } = state;
+    const cx = w / 2, cy = h / 2;
+    if (state.ritual === "ash") {
+      for (const a of state.ash) {
+        ctx2.fillStyle = `rgba(180, 160, 140, ${0.35 * a.life})`;
+        ctx2.beginPath();
+        ctx2.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+        ctx2.fill();
+      }
+    }
+    if (state.ritual === "candles") {
+      for (const c of state.candles) {
+        const x = cx + Math.cos(c.angle) * c.r;
+        const y = cy + Math.sin(c.angle) * c.r;
+        const flick = 0.7 + 0.3 * Math.sin(c.flicker);
+        ctx2.fillStyle = `rgba(40, 20, 16, 0.8)`;
+        ctx2.fillRect(x - 2 * dpr, y, 4 * dpr, 10 * dpr);
+        const flame = ctx2.createRadialGradient(x, y - 4 * dpr, 0, x, y - 4 * dpr, 8 * dpr * flick);
+        flame.addColorStop(0, `rgba(255, 200, 100, ${0.7 * flick})`);
+        flame.addColorStop(0.5, `rgba(220, 80, 40, ${0.4 * flick})`);
+        flame.addColorStop(1, "transparent");
+        ctx2.fillStyle = flame;
+        ctx2.beginPath();
+        ctx2.arc(x, y - 4 * dpr, 8 * dpr * flick, 0, Math.PI * 2);
+        ctx2.fill();
+      }
+    }
+    if (state.ritual === "glyphs") {
+      ctx2.font = `${14 * dpr}px "Cormorant Garamond", serif`;
+      ctx2.textAlign = "center";
+      ctx2.textBaseline = "middle";
+      for (const g of state.glyphs) {
+        const x = cx + Math.cos(g.angle + g.phase * 0.05) * g.r;
+        const y = cy + Math.sin(g.angle + g.phase * 0.05) * g.r;
+        ctx2.fillStyle = `rgba(180, 100, 90, ${0.35 + 0.2 * Math.sin(g.phase)})`;
+        ctx2.fillText(g.ch, x, y);
+      }
+    }
+  }
+
+  // ——— Pupil burst ———
+  function pupilBurst() {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    fleshTap();
+    const { w, h, dpr } = state;
+    const cx = w / 2, cy = h / 2;
+    state.burstUntil = performance.now() + 900;
+    state.eyeOpen = 1;
+    // eject creatures
+    const n = 6 + ((Math.random() * 6) | 0);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.2;
+      const dist = 10 * dpr;
+      spawnMirroredCreatures(
+        cx + Math.cos(a) * dist,
+        cy + Math.sin(a) * dist,
+        { burst: true, size: 1.2 }
+      );
+    }
+    // ichor / bone shards as spatters
+    spawnSplatter(cx, cy, 2.2);
+    // extra radial stains
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = (20 + Math.random() * 80) * dpr;
+      const col = sampleColor(state.hueT + i);
+      bctx.globalCompositeOperation = "source-over";
+      bctx.fillStyle = `hsla(${col.h|0} ${(col.s*100)|0}% ${(col.l*100)|0}% / 0.4)`;
+      bctx.beginPath();
+      bctx.ellipse(
+        cx + Math.cos(a) * r,
+        cy + Math.sin(a) * r,
+        (3 + Math.random() * 8) * dpr,
+        (1 + Math.random() * 3) * dpr,
+        a,
+        0,
+        Math.PI * 2
+      );
+      bctx.fill();
+    }
+    showStory("The pupil ruptures.");
+  }
+
+  // ——— Story beats ———
+  function showStory(text) {
+    if (!state.story) return;
+    const banner = $("storyBanner");
+    $("storyText").textContent = text;
+    banner.classList.add("show");
+    state.storyUntil = performance.now() + 2800;
+    state.lastStoryAt = performance.now();
+  }
+
+  function maybeStoryBeat(ts) {
+    if (!state.story || state.frozen) return;
+    if (ts < state.storyUntil) return;
+    $("storyBanner").classList.remove("show");
+    const idle = ts - state.auto.lastInput;
+    if (idle > 5000 && ts - state.lastStoryAt > 8000) {
+      const line = STORY_LINES[(Math.random() * STORY_LINES.length) | 0];
+      showStory(line);
+      // small event with story
+      if (Math.random() < 0.5 && state.creature !== "none") {
+        const { w, h } = state;
+        spawnMirroredCreatures(w / 2, h / 2, { burst: true, size: 0.9 });
+      }
+      if (Math.random() < 0.35) {
+        state.eyeOpen = Math.min(1, state.eyeOpen + 0.3);
+      }
+    }
+  }
+
+  // ——— Core paint ———
+  function paintStroke(from, to, force = 1) {
+    const { w, h, dpr } = state;
+    const cx = w / 2, cy = h / 2;
+    const segments = state.segments;
+    const wedge = (Math.PI * 2) / segments;
+    const dist = Math.hypot(to.x - from.x, to.y - from.y);
+    const stepSize = Math.max(3, state.brush * 0.35);
+    const steps = Math.max(1, Math.min(16, Math.ceil(dist / stepSize)));
+    const brush = state.brush * (0.7 + force * 0.55) * dpr;
+
+    for (let step = 0; step <= steps; step++) {
+      const t = step / steps;
+      let px = lerp(from.x, to.x, t);
+      let py = lerp(from.y, to.y, t);
+      const rx = px - cx, ry = py - cy;
+      state.hueT += 0.02 + force * 0.02;
+      const col = sampleColor(state.hueT, Math.sin(state.hueT * 3 + t) * 0.5);
+      const r = brush * (0.75 + 0.3 * Math.sin(state.hueT * 5 + t));
+
+      for (let i = 0; i < segments; i++) {
+        let lx = rx, ly = ry;
+        if (i % 2 === 1) {
+          if (state.flip) ly = -ry; else lx = -rx;
+        }
+        const p = rot(lx, ly, i * wedge);
+        stampBlob(cx + p.x, cy + p.y, r, col);
+      }
+    }
+    bctx.globalCompositeOperation = "source-over";
+
+    if (force > 0.5) wetDrag(Math.min(1, force / 2));
+
+    // spawn creatures along hard strokes
+    if (state.creature !== "none" && force > 1.0 && Math.random() < 0.2) {
+      spawnMirroredCreatures(to.x, to.y, { size: 0.85 });
+    }
+  }
+
+  function runPath(pts, force) {
+    for (let i = 1; i < pts.length; i++) paintStroke(pts[i - 1], pts[i], force);
+  }
+
+  function seedDemo() {
+    const { w, h } = state;
+    const cx = w / 2, cy = h / 2;
+    const baseR = Math.min(w, h) * 0.2;
+    const spiral = [];
+    for (let i = 0; i < 120; i++) {
+      const a = i * 0.16;
+      const r = baseR * (0.5 + 0.5 * Math.sin(i * 0.06) + 0.3 * Math.cos(i * 0.12));
+      spiral.push({
+        x: cx + Math.cos(a) * r * (1.1 + 0.3 * Math.sin(i * 0.05)),
+        y: cy + Math.sin(a * 1.35) * r * (1.05 + 0.25 * Math.cos(i * 0.07)),
+      });
+    }
+    runPath(spiral, 1.2);
+    spawnSplatter(cx, cy, 1.2);
+  }
+
+  function clear() {
+    bctx.globalCompositeOperation = "source-over";
+    bctx.fillStyle = "#050203";
+    bctx.fillRect(0, 0, state.w, state.h);
+    state.ptr.last = null;
+    state.entities = [];
+    state.spatters = [];
+    state.infectionPts = [];
+    state.websList = [];
+    state.ash = [];
+    state.eyeOpen = 0.35;
+  }
+
+  function randomize() {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    fleshTap();
+    const modesList = Object.keys(modes);
+    state.mode = modesList[(Math.random() * modesList.length) | 0];
+    state.segments = [6, 8, 10, 12, 14, 16][(Math.random() * 6) | 0];
+    state.brush = 10 + ((Math.random() * 22) | 0);
+    state.trail = 6 + ((Math.random() * 10) | 0);
+    state.flip = Math.random() > 0.3;
+    const creatures = ["spiders", "leeches", "teeth", "eyes", "bayou"];
+    state.creature = creatures[(Math.random() * creatures.length) | 0];
+    const rituals = ["none", "glyphs", "candles", "ash"];
+    state.ritual = rituals[(Math.random() * rituals.length) | 0];
+    state.candles = [];
+    state.glyphs = [];
+    state.frozen = false;
+    syncUI();
+    clear();
+    const { w, h } = state;
+    const cx = w / 2, cy = h / 2;
+    for (let k = 0; k < 5; k++) {
+      const pts = [];
+      const a0 = Math.random() * Math.PI * 2;
+      const r0 = Math.min(w, h) * (0.08 + Math.random() * 0.32);
+      for (let i = 0; i < 28; i++) {
+        const a = a0 + i * (0.08 + Math.random() * 0.1);
+        const r = r0 * (0.65 + Math.random() * 0.85);
+        pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r * (0.85 + Math.random() * 0.3) });
+      }
+      runPath(pts, 0.9 + Math.random() * 0.7);
+    }
+    spawnSplatter(cx, cy, 1.8);
+    for (let i = 0; i < 4; i++) {
+      spawnMirroredCreatures(
+        cx + (Math.random() - 0.5) * 80 * state.dpr,
+        cy + (Math.random() - 0.5) * 80 * state.dpr,
+        { size: 1 }
+      );
+    }
+    showStory("The pattern rearranges.");
+  }
+
+  function exportPng() {
+    const link = document.createElement("a");
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    link.download = `skin-of-sin-nightmare-mirror-${stamp}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
+  // ——— Screen record ———
+  let mediaRecorder = null;
+  let recordedChunks = [];
+
+  async function toggleRecord() {
+    if (state.recording && mediaRecorder) {
+      mediaRecorder.stop();
+      return;
+    }
+    try {
+      const stream = canvas.captureStream(30);
+      // try to add audio if available
+      recordedChunks = [];
+      const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9"
+        : "video/webm";
+      mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 });
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        state.recording = false;
+        $("recBtn").classList.remove("live");
+        $("recBtn").textContent = "Record clip";
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        a.href = url;
+        a.download = `skin-of-sin-nightmare-${stamp}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showStory("Clip saved.");
+      };
+      mediaRecorder.start(200);
+      state.recording = true;
+      $("recBtn").classList.add("live");
+      $("recBtn").textContent = "Stop · save";
+      showStory("Recording…");
+    } catch (err) {
+      showStory("Recording not supported here.");
+    }
+  }
+
+  function toLocal(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * state.dpr,
+      y: (clientY - rect.top) * state.dpr,
+    };
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    canvas.setPointerCapture(e.pointerId);
+    const p = toLocal(e.clientX, e.clientY);
+    state.ptr.active = true;
+    state.ptr.target = p;
+    state.ptr.smooth = { ...p };
+    state.ptr.last = { ...p };
+    state.ptr.downAt = performance.now();
+    state.ptr.downPos = { ...p };
+    state.auto.lastInput = performance.now();
+    fleshTap();
+    if (state.splatter) spawnSplatter(p.x, p.y, 1.1);
+    if (state.creature !== "none" && Math.random() < 0.4) {
+      spawnMirroredCreatures(p.x, p.y, { size: 0.8 });
+    }
+  });
+
+  canvas.addEventListener("pointermove", (e) => {
+    state.ptr.target = toLocal(e.clientX, e.clientY);
+    state.ptr.active = true;
+    state.auto.lastInput = performance.now();
+  });
+
+  canvas.addEventListener("pointerup", (e) => {
+    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+    // hard swipe detection
+    if (state.ptr.downPos) {
+      const p = toLocal(e.clientX, e.clientY);
+      const dist = Math.hypot(p.x - state.ptr.downPos.x, p.y - state.ptr.downPos.y);
+      const dur = performance.now() - state.ptr.downAt;
+      if (dist > 80 * state.dpr && dur < 400) {
+        spawnSplatter(p.x, p.y, 1.8);
+        if (state.creature !== "none") spawnMirroredCreatures(p.x, p.y, { burst: true });
+      }
+    }
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    state.ptr.active = false;
+    state.ptr.last = null;
+  });
+
+  // ——— UI ———
+  const $ = (id) => document.getElementById(id);
+
+  function syncUI() {
+    $("seg").value = state.segments;
+    $("segVal").textContent = state.segments;
+    $("mode").value = state.mode;
+    $("modeHint").textContent = modes[state.mode].hint;
+    $("creature").value = state.creature;
+    $("ritual").value = state.ritual;
+    $("brush").value = state.brush;
+    $("brushVal").textContent = state.brush;
+    $("trail").value = state.trail;
+    $("trailVal").textContent = state.trail;
+    $("flip").checked = state.flip;
+    $("splatter").checked = state.splatter;
+    $("infection").checked = state.infection;
+    $("webs").checked = state.webs;
+    $("eye").checked = state.eye;
+    $("heartbeat").checked = state.heartbeat;
+    $("story").checked = state.story;
+    $("silk").checked = state.silk;
+    $("freezeBtn").textContent = state.frozen ? "Unfreeze" : "Freeze";
+    $("freezeBtn").classList.toggle("active", state.frozen);
+    $("statusDot").classList.toggle("held", state.frozen);
+    $("statusText").textContent = state.frozen ? "Held still" : "Something watches";
+    setMuted(state.muted);
+  }
+
+  $("seg").addEventListener("input", (e) => {
+    state.segments = +e.target.value;
+    $("segVal").textContent = state.segments;
+    state.candles = [];
+    state.glyphs = [];
+  });
+  $("mode").addEventListener("change", (e) => {
+    state.mode = e.target.value;
+    $("modeHint").textContent = modes[state.mode].hint;
+  });
+  $("creature").addEventListener("change", (e) => { state.creature = e.target.value; });
+  $("ritual").addEventListener("change", (e) => {
+    state.ritual = e.target.value;
+    state.candles = [];
+    state.glyphs = [];
+    state.ash = [];
+  });
+  $("brush").addEventListener("input", (e) => {
+    state.brush = +e.target.value;
+    $("brushVal").textContent = state.brush;
+  });
+  $("trail").addEventListener("input", (e) => {
+    state.trail = +e.target.value;
+    $("trailVal").textContent = state.trail;
+  });
+
+  ["flip","splatter","infection","webs","eye","heartbeat","story","silk"].forEach((id) => {
+    $(id).addEventListener("change", (e) => { state[id] = e.target.checked; });
+  });
+
+  $("freezeBtn").addEventListener("click", () => {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    state.frozen = !state.frozen;
+    fleshTap();
+    syncUI();
+  });
+  $("randBtn").addEventListener("click", randomize);
+  $("burstBtn").addEventListener("click", pupilBurst);
+  $("clearBtn").addEventListener("click", () => { fleshTap(); clear(); });
+  $("exportBtn").addEventListener("click", exportPng);
+  $("recBtn").addEventListener("click", toggleRecord);
+  $("foldBtn").addEventListener("click", () => {
+    const d = $("details");
+    d.classList.toggle("open");
+    $("foldBtn").textContent = d.classList.contains("open") ? "▾" : "▴";
+  });
+  $("muteBtn").addEventListener("click", () => {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    setMuted(!state.muted);
+  });
+  window.addEventListener("pointerdown", () => {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }, { once: true });
+
+  // ——— Frame ———
+  let seeded = false;
+  let lastTs = performance.now();
+  let lastBeat = 0;
+  state.auto.lastInput = performance.now();
+
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(48, ts - lastTs);
+    lastTs = ts;
+    resize();
+    const { w, h, dpr } = state;
+    if (w < 2) return;
+    if (!seeded) { seeded = true; seedDemo(); }
+
+    const bpm = 62;
+    state.beatPhase += (dt / 1000) * (bpm / 60) * Math.PI * 2;
+    state.breathPhase += (dt / 1000) * 0.35 * Math.PI * 2;
+    state.pulse += dt * 0.004;
+    state.eyeOpen = lerp(state.eyeOpen, ts < state.burstUntil ? 1 : 0.35, 0.04);
+
+    if (state.heartbeat && !state.frozen && !state.reducedMotion) {
+      if (ts - lastBeat > 60000 / bpm) {
+        lastBeat = ts;
+        beatThump();
+      }
+      const beat = Math.max(0, Math.sin(state.beatPhase));
+      stage.style.transform = `scale(${(1 + beat * beat * 0.012).toFixed(4)})`;
+    } else {
+      stage.style.transform = "none";
+    }
+
+    if (!state.frozen) {
+      const fade = 0.045 * (1 - (state.trail - 1) / 19) + 0.006;
+      bctx.globalCompositeOperation = "source-over";
+      bctx.fillStyle = `rgba(5, 2, 3, ${fade.toFixed(4)})`;
+      bctx.fillRect(0, 0, w, h);
+      infectionStep();
+      maybeAddWeb();
+    }
+
+    const ptr = state.ptr;
+    const auto = state.auto;
+    const cx = w / 2, cy = h / 2;
+    const idle = ts - auto.lastInput > 1400;
+
+    if (!state.frozen && idle) {
+      auto.angle += auto.speed * 0.0015 * dt;
+      auto.radius = lerp(auto.radius, auto.radiusTarget, 0.012);
+      if (Math.random() < 0.012) {
+        auto.radiusTarget = 0.12 + Math.random() * 0.42;
+        auto.speed = 0.5 + Math.random() * 1.6;
+      }
+      const maxR = Math.min(w, h) * 0.48 * auto.radius;
+      const wobble = Math.sin(ts * 0.0015) * 0.22;
+      ptr.target = {
+        x: cx + Math.cos(auto.angle) * maxR * (1 + wobble),
+        y: cy + Math.sin(auto.angle * 1.27) * maxR * (1 - wobble * 0.4),
+      };
+      ptr.active = true;
+    }
+
+    const smoothAmt = 1 - Math.exp(-0.018 * dt);
+    ptr.smooth.x = lerp(ptr.smooth.x, ptr.target.x, smoothAmt);
+    ptr.smooth.y = lerp(ptr.smooth.y, ptr.target.y, smoothAmt);
+
+    if (!state.frozen && ptr.active) {
+      const last = ptr.last || ptr.smooth;
+      const speed = Math.hypot(ptr.smooth.x - last.x, ptr.smooth.y - last.y);
+      const force = clamp(speed / 9, 0.4, 2.1);
+      if (speed > 0.35 || idle) paintStroke(last, ptr.smooth, force);
+      ptr.last = { ...ptr.smooth };
+    }
+
+    if (!state.frozen) {
+      updateSpatters(dt);
+      updateCreatures(dt);
+      updateRitual(dt);
+    }
+
+    maybeStoryBeat(ts);
+
+    // present
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(buffer, 0, 0);
+
+    drawSpatters(ctx);
+    drawWebs(ctx);
+    drawCreatures(ctx);
+    drawRitual(ctx);
+
+    // vignette
+    const breath = 0.5 + 0.5 * Math.sin(state.breathPhase);
+    const vig = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.12, cx, cy, Math.min(w, h) * 0.78);
+    vig.addColorStop(0, "transparent");
+    vig.addColorStop(0.55, `rgba(8, 1, 3, ${0.15 + breath * 0.05})`);
+    vig.addColorStop(1, `rgba(2, 0, 1, ${0.8})`);
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+
+    // watching eye
+    if (state.eye) {
+      const open = state.eyeOpen;
+      const eyeR = Math.min(w, h) * 0.05 * (0.8 + open * 0.5);
+      const lookX = (ptr.smooth.x - cx) * 0.04;
+      const lookY = (ptr.smooth.y - cy) * 0.04;
+      const ex = cx + clamp(lookX, -eyeR * 0.35, eyeR * 0.35);
+      const ey = cy + clamp(lookY, -eyeR * 0.35, eyeR * 0.35);
+
+      const sclera = ctx.createRadialGradient(cx, cy, 0, cx, cy, eyeR * 1.4);
+      sclera.addColorStop(0, `rgba(90, 20, 28, ${0.4 * open})`);
+      sclera.addColorStop(0.55, `rgba(30, 6, 10, ${0.45 * open})`);
+      sclera.addColorStop(1, "transparent");
+      ctx.fillStyle = sclera;
+      ctx.beginPath();
+      ctx.arc(cx, cy, eyeR * 1.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // lid slit based on open
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, eyeR * 1.1, eyeR * (0.3 + open * 0.7), 0, 0, Math.PI * 2);
+      ctx.clip();
+
+      const iris = ctx.createRadialGradient(ex, ey, 0, ex, ey, eyeR * 0.55);
+      iris.addColorStop(0, "rgba(160, 40, 48, 0.6)");
+      iris.addColorStop(0.45, "rgba(60, 10, 16, 0.75)");
+      iris.addColorStop(1, "rgba(10, 2, 4, 0.55)");
+      ctx.fillStyle = iris;
+      ctx.beginPath();
+      ctx.arc(ex, ey, eyeR * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(5, 1, 2, 0.92)";
+      ctx.beginPath();
+      ctx.arc(ex, ey, eyeR * 0.22 * open, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(230, 180, 170, 0.28)";
+      ctx.beginPath();
+      ctx.arc(ex - eyeR * 0.12, ey - eyeR * 0.14, eyeR * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (state.frozen) {
+      ctx.strokeStyle = "rgba(180, 80, 70, 0.4)";
+      ctx.lineWidth = Math.max(2, dpr * 1.5);
+      const pad = 10 * dpr;
+      ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+    }
+
+    if (state.recording) {
+      ctx.fillStyle = "rgba(180, 40, 40, 0.9)";
+      ctx.beginPath();
+      ctx.arc(w - 24 * dpr, 24 * dpr, 6 * dpr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+  syncUI();
+  requestAnimationFrame(frame);
+})();
+  </script>
+</body>
+</html>

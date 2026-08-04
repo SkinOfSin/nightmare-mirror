@@ -1,0 +1,250 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0c0708;
+  --color-bg-deep: #060304;
+  --color-surface: #1a1012;
+  --color-surface-raised: #241618;
+  --color-fg: #f0e4dc;
+  --color-fg-muted: #a89088;
+  --color-fg-subtle: #6e5550;
+  --color-border: #3a2428;
+  --color-border-strong: #5a3438;
+  --color-flesh: #c4786a;
+  --color-flesh-raw: #e8a090;
+  --color-blood: #8b1e2d;
+  --color-blood-deep: #4a0e16;
+  --color-bruise: #5c3a6e;
+  --color-bone: #e8d8c8;
+  --color-ichor: #3d4a28;
+  --color-danger: #b83240;
+  --color-accent: #c4786a;
+  --color-accent-fg: #0c0708;
+
+  --font-display: "Cormorant Garamond", "Times New Roman", serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-pill: 9999px;
+
+  --shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(196, 120, 106, 0.12);
+  --shadow-glow: 0 0 24px rgba(139, 30, 45, 0.35);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--color-bg-deep);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-blood) 55%, transparent);
+    color: var(--color-bone);
+  }
+}
+
+/* Organic panel grain + wet sheen */
+.sin-panel {
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in oklab, var(--color-surface-raised) 92%, var(--color-flesh)) 0%,
+      var(--color-surface) 48%,
+      color-mix(in oklab, var(--color-surface) 88%, var(--color-blood-deep)) 100%
+    );
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-panel);
+  position: relative;
+  overflow: hidden;
+}
+
+.sin-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.sin-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 80% at 20% 0%,
+    color-mix(in oklab, var(--color-flesh-raw) 14%, transparent),
+    transparent 55%
+  );
+}
+
+.sin-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    var(--color-blood-deep),
+    var(--color-flesh),
+    var(--color-bone)
+  );
+  outline: none;
+}
+
+.sin-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--color-flesh-raw), var(--color-blood));
+  border: 1px solid color-mix(in oklab, var(--color-bone) 40%, transparent);
+  box-shadow: 0 0 10px rgba(139, 30, 45, 0.55);
+  cursor: pointer;
+}
+
+.sin-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--color-flesh-raw), var(--color-blood));
+  border: 1px solid color-mix(in oklab, var(--color-bone) 40%, transparent);
+  box-shadow: 0 0 10px rgba(139, 30, 45, 0.55);
+  cursor: pointer;
+}
+
+.sin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: color-mix(in oklab, var(--color-surface-raised) 80%, var(--color-blood-deep));
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition:
+    background 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sin-btn:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: color-mix(in oklab, var(--color-surface-raised) 55%, var(--color-blood));
+}
+
+.sin-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.sin-btn-primary {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-flesh) 70%, var(--color-bone)),
+    var(--color-blood)
+  );
+  border-color: color-mix(in oklab, var(--color-flesh-raw) 40%, var(--color-blood));
+  color: var(--color-bg-deep);
+  font-weight: 600;
+  box-shadow: var(--shadow-glow);
+}
+
+.sin-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--color-flesh-raw), var(--color-blood));
+}
+
+.sin-btn-active {
+  border-color: var(--color-flesh);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-flesh) 50%, transparent);
+  background: color-mix(in oklab, var(--color-blood-deep) 70%, var(--color-surface));
+  color: var(--color-flesh-raw);
+}
+
+.sin-select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.sin-select:focus {
+  border-color: var(--color-flesh);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-blood) 35%, transparent);
+}
+
+.vein-pulse {
+  animation: vein-pulse 3.6s ease-in-out infinite;
+}
+
+@keyframes vein-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vein-pulse {
+    animation: none;
+  }
+
+  .sin-btn {
+    transition: none;
+  }
+}
